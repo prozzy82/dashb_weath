@@ -107,11 +107,11 @@ if selected_locations:
 
 
                     # --- ИЗМЕНЕНИЕ: ТАБЛИЦА НА 2 ДНЯ (16 ЗАПИСЕЙ) ---
-                    st.subheader("🗓️ Детальный прогноз на 3 дня")
+                    st.subheader("🗓️ Детальный прогноз на 2 дня")
                     
                     table_data = []
                     # Ограничиваем цикл первыми 16 записями (8 записей/день * 2 дня)
-                    for entry in forecast_list[:24]:
+                    for entry in forecast_list[:16]:
                         dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
                         
                         table_data.append({
@@ -126,8 +126,8 @@ if selected_locations:
                     
                     df_forecast = pd.DataFrame(table_data)
                     
-                    # Рассчитываем высоту для 24 строк
-                    table_height = (24 + 1) * 35
+                    # Рассчитываем высоту для 16 строк
+                    table_height = (16 + 1) * 35
                     st.dataframe(
                         df_forecast, 
                         use_container_width=True, 
