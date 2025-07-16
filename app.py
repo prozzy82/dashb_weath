@@ -96,28 +96,7 @@ if selected_locations:
                     data = get_weather_data(lat, lon)
                     forecast_list = data["list"]
 
-                    # --- НОВЫЙ БЛОК: Создание детальной таблицы прогноза ---
-                    st.subheader("🗓️ Детальный прогноз по часам")
-                    
-                    table_data = []
-                    for entry in forecast_list:
-                        dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
-                        
-                        table_data.append({
-                            "Дата": dt_object.strftime("%d.%m"),
-                            "Время": map_time_to_period(dt_object.hour),
-                            "Явления": entry["weather"][0]["description"].capitalize(),
-                            "Температура, °C": round(entry["main"]["temp"]),
-                            "Давление, мм рт. ст.": round(entry["main"]["pressure"] * 0.75006),
-                            "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])} {round(entry['wind']['speed'])}",
-                            "Влажность, %": entry["main"]["humidity"]
-                        })
-                    
-                    df_forecast = pd.DataFrame(table_data)
-                    st.dataframe(df_forecast, use_container_width=True, hide_index=True)
-                    # --- КОНЕЦ НОВОГО БЛОКА ---
-
-                    # Текущая погода (первая запись из прогноза)
+                    # --- ИЗМЕНЕНИЕ 1: БЛОК С ТЕКУЩЕЙ ПОГОДОЙ ТЕПЕРЬ ВВЕРХУ ---
                     st.subheader("☀️ Текущая погода")
                     current = forecast_list[0]
                     col1, col2 = st.columns(2)
@@ -126,16 +105,44 @@ if selected_locations:
                     col2.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
                     col2.metric("Облачность", f"{current['clouds']['all']} %")
 
-                    # Группировка по дате для графиков и сводки
+
+                    # --- Блок с детальной таблицей прогноза ---
+                    st.subheader("🗓️ Детальный прогноз по часам")
+                    
+                    table_data = []
+                    for entry in forecast_list:
+                        dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
+                        
+                        table_data.append({
+                            "Дата": dt_object.strftime("%d.%m"),
+                            "Время": f"{dt_object.strftime('%H:%M')}, {map_time_to_period(dt_object.hour)}",
+                            "Явления": entry["weather"][0]["description"].capitalize(),
+                            "Темп., °C": round(entry["main"]["temp"]),
+                            "Давление": round(entry['main']['pressure'] * 0.75006),
+                            "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])} {round(entry['wind']['speed'])}",
+                            "Влажность, %": entry["main"]["humidity"]
+                        })
+                    
+                    df_forecast = pd.DataFrame(table_data)
+                    
+                    # --- ИЗМЕНЕНИЕ 2: ДИНАМИЧЕСКИЙ РАСЧЕТ ВЫСОТЫ ТАБЛИЦЫ ---
+                    # Рассчитываем высоту: (кол-во строк + 1 для заголовка) * 35 пикселей на строку
+                    table_height = (len(df_forecast) + 1) * 35
+                    st.dataframe(
+                        df_forecast, 
+                        use_container_width=True, 
+                        hide_index=True, 
+                        height=table_height
+                    )
+
+                    # Группировка по дате для графиков
+                    st.subheader("📊 Графики прогноза на 5 дней")
                     grouped = defaultdict(list)
                     for entry in forecast_list:
                         date_str = entry["dt_txt"].split(" ")[0]
                         grouped[date_str].append(entry)
                     
-                    # --- Блок со сводкой на 3 дня (можно оставить или убрать) ---
-                    st.subheader("📊 Сводка и графики на 3 дня")
-                    
-                    forecast_days = sorted(grouped.keys())[1:4] # Берем следующие 3 дня
+                    forecast_days = sorted(grouped.keys())
 
                     # Подготовка данных для графиков
                     temp_records = []
@@ -150,28 +157,30 @@ if selected_locations:
                         clouds = [x["clouds"]["all"] for x in day_data]
                         pops = [x.get("pop", 0) for x in day_data]
 
+                        if not temps: continue
+
                         temp_day = max(temps)
                         temp_night = min(temps)
                         
-                        # Добавляем данные для графиков
                         temp_records.append({"Дата": date, "Температура": temp_day, "Время суток": "День"})
                         temp_records.append({"Дата": date, "Температура": temp_night, "Время суток": "Ночь"})
                         wind_records.append({"Дата": date, "Скорость ветра": sum(wind_speeds) / len(wind_speeds)})
                         cloud_records.append({"Дата": date, "Облачность": sum(clouds) / len(clouds)})
                         pop_records.append({"Дата": date, "Вероятность осадков": int(max(pops) * 100)})
 
-                    # Графики
+                    # Создание DataFrame'ов для графиков
                     df_temp = pd.DataFrame(temp_records)
                     df_wind = pd.DataFrame(wind_records)
                     df_cloud = pd.DataFrame(cloud_records)
                     df_pop = pd.DataFrame(pop_records)
 
+                    # Построение графиков
                     chart_temp = alt.Chart(df_temp).mark_line(point=True).encode(
                         x=alt.X('Дата', title='Дата'),
                         y=alt.Y('Температура', title='Температура, °C'),
                         color='Время суток',
                         tooltip=['Дата', 'Время суток', 'Температура']
-                    ).properties(title='Динамика температуры на 3 дня')
+                    ).properties(title='Динамика температуры')
 
                     chart_wind = alt.Chart(df_wind).mark_line(point=True, color='green').encode(
                         x=alt.X('Дата', title='Дата'),
@@ -179,22 +188,15 @@ if selected_locations:
                         tooltip=['Дата', 'Скорость ветра']
                     )
 
-                    chart_cloud = alt.Chart(df_cloud).mark_line(point=True, color='gray').encode(
-                        x=alt.X('Дата', title='Дата'),
-                        y=alt.Y('Облачность', title='Облачность, %'),
-                        tooltip=['Дата', 'Облачность']
-                    )
-
-                    chart_pop = alt.Chart(df_pop).mark_line(point=True, color='blue').encode(
+                    chart_pop = alt.Chart(df_pop).mark_bar(size=15, opacity=0.7, color='blue').encode(
                         x=alt.X('Дата', title='Дата'),
                         y=alt.Y('Вероятность осадков', title='Вероятность осадков, %'),
                         tooltip=['Дата', 'Вероятность осадков']
-                    )
+                    ).properties(title='Вероятность осадков')
 
                     combined_chart = alt.vconcat(
                         chart_temp,
                         chart_wind,
-                        chart_cloud,
                         chart_pop
                     ).resolve_scale(
                         x='shared' # общая ось X для всех графиков
