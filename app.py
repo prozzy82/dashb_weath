@@ -97,14 +97,6 @@ if selected_locations:
 
                     # Блок с текущей погодой
                     st.subheader("☀️ Текущая погода")                   
-                    # Блок явлений - под метриками
-                    st.markdown(
-                        f"<div style='display: flex; align-items: center; margin-top: 15px;'>"
-                        f"<img src='{icon_url}' alt='Weather icon' style='width: 50px; margin-right: 10px;'>"
-                        f"<span style='font-size: 18px; font-weight: bold;'>{weather_description}</span>"
-                        f"</div>",
-                        unsafe_allow_html=True
-                    )
                     current = forecast_list[0]
                     weather_description = current['weather'][0]['description'].capitalize()
                     weather_icon = current['weather'][0]['icon']
@@ -119,6 +111,15 @@ if selected_locations:
                         st.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
                         st.metric("Облачность", f"{current['clouds']['all']} %")
 
+                    # Блок явлений - под метриками
+                    st.markdown(
+                        f"<div style='display: flex; align-items: center; margin-top: 15px;'>"
+                        f"<img src='{icon_url}' alt='Weather icon' style='width: 50px; margin-right: 10px;'>"
+                        f"<span style='font-size: 18px; font-weight: bold;'>{weather_description}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
+                    st.divider()  # Добавляет тонкую горизонтальную линию
                     
                     
                     # --- ИЗМЕНЕНИЕ: ТАБЛИЦА НА 2 ДНЯ (16 ЗАПИСЕЙ) ---
