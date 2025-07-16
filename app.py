@@ -98,9 +98,12 @@ if selected_locations:
                     # Блок с текущей погодой
                     st.subheader("☀️ Текущая погода")                   
                     current = forecast_list[0]
-                    col1, col2 = st.columns(2)
+                    weather_description = current['weather'][0]['description'].capitalize()  # Добавьте эту строку
+
+                    # Создаем ТРИ колонки вместо двух
+                    col1, col2, col3 = st.columns(3)
                     col1.metric("Температура", f"{current['main']['temp']} °C")
-                    col1.metric("Ветер", f"{current['wind']['speed']} м/с")
+                    col1.metric("Ветер", f"{degrees_to_cardinal(current['wind']['deg'])}; {current['wind']['speed']} м/с")  # Добавлено направление
                     col2.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
                     col2.metric("Облачность", f"{current['clouds']['all']} %")
                     col3.metric("Явления", weather_description)  # Новая метрика с явлениями
