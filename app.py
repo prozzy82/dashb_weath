@@ -15,7 +15,7 @@ except KeyError:
     st.stop()
 
 def get_weather_data(lat, lon):
-    url = "https://api.openweathermap.org/data/2.5/onecall"
+    url = "http://api.openweathermap.org/data/2.5/forecast"
     params = {
         "lat": lat,
         "lon": lon,
