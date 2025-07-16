@@ -50,7 +50,7 @@ if selected_locations:
                 lat, lon = locations[name]
                 st.markdown(f"---")
                 st.subheader(f"📍 Погода в {name}")
-                try:
+                 try:
                     data = get_weather_data(lat, lon)
 
                     if "current" in data:
