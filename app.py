@@ -5,6 +5,14 @@ import pandas as pd
 import altair as alt
 
 API_KEY = st.secrets["OPENWEATHER_API_KEY"]
+try:
+    API_KEY = st.secrets["OPENWEATHER_API_KEY"]
+    if not API_KEY:
+        st.error("OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте ключ в настройки приложения.")
+        st.stop()
+except KeyError:
+    st.error("OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте ключ в настройки приложения.")
+    st.stop()
 
 def get_weather_data(lat, lon):
     url = "https://api.openweathermap.org/data/2.5/onecall"
@@ -35,14 +43,15 @@ for i in range(1, 5):
 st.markdown("---")
 selected_locations = st.multiselect("Выберите локации для отображения погоды:", options=list(locations.keys()))
 
-if st.button("Показать погоду для выбранных локаций") and selected_locations:
-    with st.spinner("Получаем данные..."):
-        for name in selected_locations:
-            lat, lon = locations[name]
-            st.markdown(f"---")
-            st.subheader(f"📍 Погода в {name}")
-            try:
-                data = get_weather_data(lat, lon)
+if selected_locations:
+    if st.button("Показать погоду для выбранных локаций"):
+        with st.spinner("Получаем данные..."):
+            for name in selected_locations:
+                lat, lon = locations[name]
+                st.markdown(f"---")
+                st.subheader(f"📍 Погода в {name}")
+                try:
+                    data = get_weather_data(lat, lon)
 
                 if "current" in data:
                     current = data["current"]
@@ -76,15 +85,14 @@ if st.button("Показать погоду для выбранных локац
                         cloud_records.append({"Дата": date, "Облачность": day['clouds']})
                         pop_records.append({"Дата": date, "Вероятность осадков": int(day['pop'] * 100)})
 
-                        st.write(f"📅 {date}")
+                       st.write(f"📅 {date}")
                         st.write(f"Температура: день {day['temp']['day']} °C, ночь {day['temp']['night']} °C")
                         st.write(f"Облачность: {day['clouds']} %")
                         st.write(f"Вероятность осадков: {int(day['pop'] * 100)} %")
-                        if "rain" in day:
-                            st.write(f"Дождь: {day['rain']} мм")
-                        if "snow" in day:
-                            st.write(f"Снег: {day['snow']} мм")
-                        st.write("---")
+                        rain = day.get('rain', 0)
+                        snow = day.get('snow', 0)
+                        st.write(f"Дождь: {rain} мм")
+                        st.write(f"Снег: {snow} мм")
 
                     df_temp = pd.DataFrame(temp_records)
                     df_wind = pd.DataFrame(wind_records)
@@ -117,12 +125,25 @@ if st.button("Показать погоду для выбранных локац
                         tooltip=['Дата', 'Вероятность осадков']
                     ).properties(width=600, height=200, title='Вероятность осадков (%)')
 
-                    st.altair_chart(chart_temp, use_container_width=True)
-                    st.altair_chart(chart_wind, use_container_width=True)
-                    st.altair_chart(chart_cloud, use_container_width=True)
-                    st.altair_chart(chart_pop, use_container_width=True)
+                    combined_chart = alt.vconcat(
+                        chart_temp,
+                        chart_wind,
+                        chart_cloud,
+                        chart_pop,
+                        spacing=20
+                    )
+                    st.altair_chart(combined_chart, use_container_width=True)
                 else:
                     st.error(f"Ошибка: в ответе отсутствуют текущие данные для {name}")
+
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 401:
+                    st.error(f"Ошибка аутентификации для {name}: Неверный API-ключ OpenWeatherMap")
+                else:
+                    st.error(f"Ошибка HTTP ({e.response.status_code}) для {name}: {e.response.reason}")
+            except Exception as e:
+                st.error(f"Ошибка при получении данных для {name}: {str(e)}")
+
 
             except requests.exceptions.HTTPError as e:
                 st.error(f"Ошибка HTTP для {name}: {e}")
