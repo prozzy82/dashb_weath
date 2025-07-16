@@ -151,7 +151,7 @@ if selected_locations:
                             "Явления": entry["weather"][0]["description"].capitalize(),
                             "Темп., °C": round(entry["main"]["temp"]),
                             "Давл.": round(entry['main']['pressure'] * 0.75006),
-                            "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])}; {round(entry['wind']['speed'])}",
+                            "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])};    {round(entry['wind']['speed'])}м/c",
                             "Влажн., %": entry["main"]["humidity"],
                             "Осадки": f"({precipitation:.1f} мм)"  # Новая колонка
                         })
