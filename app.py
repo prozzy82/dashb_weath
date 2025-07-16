@@ -113,9 +113,9 @@ if selected_locations:
 
                     # Блок явлений - под метриками
                     st.markdown(
-                        f"<div style='display: flex; align-items: center; margin-top: 10px;'>"
-                        f"<img src='{icon_url}' alt='Weather icon' style='width: 40px; margin-right: 8px;'>"
-                        f"<span style='font-size: 16px;'><b>{weather_description}</b></span>"
+                        f"<div style='display: flex; align-items: center; margin-top: 15px;'>"
+                        f"<img src='{icon_url}' alt='Weather icon' style='width: 50px; margin-right: 10px;'>"
+                        f"<span style='font-size: 18px; font-weight: bold;'>{weather_description}</span>"
                         f"</div>",
                         unsafe_allow_html=True
                     )
