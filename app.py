@@ -103,6 +103,7 @@ if selected_locations:
                     col1.metric("Ветер", f"{current['wind']['speed']} м/с")
                     col2.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
                     col2.metric("Облачность", f"{current['clouds']['all']} %")
+                    
                     st.markdown(f"**Погодные условия:** {weather_description}")
 
 
