@@ -51,7 +51,6 @@ def degrees_to_cardinal(d):
     ix = int(round(d / (360. / len(dirs))))
     return dirs[ix % len(dirs)]
 
-
 # --- Интерфейс приложения ---
 
 st.title("🌦️ Погода")
@@ -97,13 +96,14 @@ if selected_locations:
                     forecast_list = data["list"]
 
                     # Блок с текущей погодой
-                    st.subheader("☀️ Текущая погода")
+                    st.subheader("☀️ Текущая погода")                   
                     current = forecast_list[0]
                     col1, col2 = st.columns(2)
                     col1.metric("Температура", f"{current['main']['temp']} °C")
                     col1.metric("Ветер", f"{current['wind']['speed']} м/с")
                     col2.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
                     col2.metric("Облачность", f"{current['clouds']['all']} %")
+                    st.markdown(f"**Погодные условия:** {weather_description}")
 
 
                     # --- ИЗМЕНЕНИЕ: ТАБЛИЦА НА 2 ДНЯ (16 ЗАПИСЕЙ) ---
