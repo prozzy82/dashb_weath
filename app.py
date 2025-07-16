@@ -150,10 +150,10 @@ if selected_locations:
                             "Время": f"{dt_object.strftime('%H:%M')}, {map_time_to_period(dt_object.hour)}",
                             "Явления": entry["weather"][0]["description"].capitalize(),
                             "Темп., °C": round(entry["main"]["temp"]),
-                            "Давление": round(entry['main']['pressure'] * 0.75006),
+                            "Давл.": round(entry['main']['pressure'] * 0.75006),
                             "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])}; {round(entry['wind']['speed'])}",
-                            "Влажность, %": entry["main"]["humidity"],
-                            "Осадки": f"{precip_intensity} ({precipitation:.1f} мм)"  # Новая колонка
+                            "Влажн., %": entry["main"]["humidity"],
+                            "Осадки": f"({precipitation:.1f} мм)"  # Новая колонка
                         })
                     
                     df_forecast = pd.DataFrame(table_data)
