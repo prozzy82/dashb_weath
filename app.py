@@ -14,8 +14,9 @@ def get_weather_data(lat, lon):
     response = requests.get(url)
     return response.json()
 
-st.title("🌦️ Погода ")
+st.title("🌦️ Погода")
 
+# Ввод локаций
 locations = {}
 for i in range(1, 5):
     st.subheader(f"Локация {i}")
@@ -24,8 +25,13 @@ for i in range(1, 5):
     lon = st.number_input(f"Долгота {i}:", value=37.61, format="%.6f", key=f"lon_{i}")
     locations[name] = (lat, lon)
 
-if st.button("Показать погоду для всех локаций"):
-    for name, (lat, lon) in locations.items():
+# Выбор локаций для отображения
+st.markdown("---")
+selected_locations = st.multiselect("Выберите локации для отображения погоды:", options=list(locations.keys()))
+
+if st.button("Показать погоду для выбранных локаций") and selected_locations:
+    for name in selected_locations:
+        lat, lon = locations[name]
         st.markdown(f"---")
         st.subheader(f"📍 Погода в {name}")
         data = get_weather_data(lat, lon)
@@ -46,7 +52,7 @@ if st.button("Показать погоду для всех локаций"):
 
             forecast_days = data["daily"][1:4]
 
-            # Формируем датафреймы для каждого графика
+            # Формируем датафреймы для графиков
             temp_records = []
             wind_records = []
             cloud_records = []
@@ -55,20 +61,13 @@ if st.button("Показать погоду для всех локаций"):
             for day in forecast_days:
                 date = datetime.fromtimestamp(day['dt']).strftime('%Y-%m-%d')
 
-                # Температура день/ночь
                 temp_records.append({"Дата": date, "Температура": day['temp']['day'], "Время суток": "День"})
                 temp_records.append({"Дата": date, "Температура": day['temp']['night'], "Время суток": "Ночь"})
 
-                # Ветер (одна метрика, только дневное значение, т.к. нет отдельного ночного)
                 wind_records.append({"Дата": date, "Скорость ветра": day['wind_speed']})
-
-                # Облачность (%)
                 cloud_records.append({"Дата": date, "Облачность": day['clouds']})
-
-                # Вероятность осадков (pop)
                 pop_records.append({"Дата": date, "Вероятность осадков": int(day['pop'] * 100)})
 
-                # Вывод подробностей по дню
                 st.write(f"📅 {date}")
                 st.write(f"Температура: день {day['temp']['day']} °C, ночь {day['temp']['night']} °C")
                 st.write(f"Облачность: {day['clouds']} %")
@@ -84,52 +83,32 @@ if st.button("Показать погоду для всех локаций"):
             df_cloud = pd.DataFrame(cloud_records)
             df_pop = pd.DataFrame(pop_records)
 
-            # График температуры
+            # Графики
             chart_temp = alt.Chart(df_temp).mark_line(point=True).encode(
                 x='Дата',
                 y='Температура',
                 color='Время суток',
                 tooltip=['Дата', 'Время суток', 'Температура']
-            ).properties(
-                width=600,
-                height=300,
-                title='Динамика температуры на 3 дня'
-            )
+            ).properties(width=600, height=300, title='Динамика температуры на 3 дня')
 
-            # График ветра
             chart_wind = alt.Chart(df_wind).mark_line(point=True, color='green').encode(
                 x='Дата',
                 y='Скорость ветра',
                 tooltip=['Дата', 'Скорость ветра']
-            ).properties(
-                width=600,
-                height=200,
-                title='Скорость ветра (м/с)'
-            )
+            ).properties(width=600, height=200, title='Скорость ветра (м/с)')
 
-            # График облачности
             chart_cloud = alt.Chart(df_cloud).mark_line(point=True, color='gray').encode(
                 x='Дата',
                 y='Облачность',
                 tooltip=['Дата', 'Облачность']
-            ).properties(
-                width=600,
-                height=200,
-                title='Облачность (%)'
-            )
+            ).properties(width=600, height=200, title='Облачность (%)')
 
-            # График вероятности осадков
             chart_pop = alt.Chart(df_pop).mark_line(point=True, color='blue').encode(
                 x='Дата',
                 y='Вероятность осадков',
                 tooltip=['Дата', 'Вероятность осадков']
-            ).properties(
-                width=600,
-                height=200,
-                title='Вероятность осадков (%)'
-            )
+            ).properties(width=600, height=200, title='Вероятность осадков (%)')
 
-            # Выводим графики
             st.altair_chart(chart_temp, use_container_width=True)
             st.altair_chart(chart_wind, use_container_width=True)
             st.altair_chart(chart_cloud, use_container_width=True)
