@@ -5,18 +5,23 @@ import pandas as pd
 import altair as alt
 from collections import defaultdict
 
+# --- Ключ API ---
 API_KEY = ""
 try:
+    # Предпочтительный способ получения ключа из секретов Streamlit
     API_KEY = st.secrets["OPENWEATHER_API_KEY"]
     if not API_KEY:
-        st.error("OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте ключ в настройки приложения.")
+        st.error("Ключ OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте его в настройки вашего приложения.")
         st.stop()
-except KeyError:
-    st.error("OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте ключ в настройки приложения.")
+except (KeyError, FileNotFoundError):
+    st.error("Ключ OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте его в настройки вашего приложения.")
     st.stop()
 
 
+# --- Функции ---
+
 def get_weather_data(lat, lon):
+    """Получает данные о погоде с API OpenWeatherMap."""
     url = "http://api.openweathermap.org/data/2.5/forecast"
     params = {
         "lat": lat,
@@ -29,6 +34,25 @@ def get_weather_data(lat, lon):
     response.raise_for_status()
     return response.json()
 
+def map_time_to_period(hour):
+    """Сопоставляет час с названием времени суток."""
+    if 5 <= hour < 12:
+        return "Утро"
+    elif 12 <= hour < 18:
+        return "День"
+    elif 18 <= hour < 23:
+        return "Вечер"
+    else:
+        return "Ночь"
+
+def degrees_to_cardinal(d):
+    """Конвертирует градусы в направление ветра."""
+    dirs = ["С", "ССВ", "СВ", "ВСВ", "В", "ВЮВ", "ЮВ", "ЮЮВ", "Ю", "ЮЮЗ", "ЮЗ", "ЗЮЗ", "З", "ЗСЗ", "СЗ", "ССЗ"]
+    ix = int(round(d / (360. / len(dirs))))
+    return dirs[ix % len(dirs)]
+
+
+# --- Интерфейс приложения ---
 
 st.title("🌦️ Погода")
 
@@ -36,15 +60,30 @@ st.title("🌦️ Погода")
 with st.sidebar:
     st.header("Параметры локаций")
     locations = {}
+    # Пример локаций по умолчанию
+    default_locs = {
+        "Москва": (55.75, 37.61),
+        "Санкт-Петербург": (59.93, 30.31),
+        "Омск": (54.98, 73.36)
+    }
+    
     for i in range(1, 4):
         st.subheader(f"Локация {i}")
-        name = st.text_input(f"Название локации {i}:", value=f"Место {i}", key=f"name_{i}")
-        lat = st.number_input(f"Широта {i}:", value=55.75, format="%.6f", key=f"lat_{i}")
-        lon = st.number_input(f"Долгота {i}:", value=37.61, format="%.6f", key=f"lon_{i}")
+        # Используем ключи из словаря для значений по умолчанию
+        default_name = list(default_locs.keys())[i-1]
+        default_lat, default_lon = default_locs[default_name]
+        
+        name = st.text_input(f"Название локации {i}:", value=default_name, key=f"name_{i}")
+        lat = st.number_input(f"Широта {i}:", value=default_lat, format="%.6f", key=f"lat_{i}")
+        lon = st.number_input(f"Долгота {i}:", value=default_lon, format="%.6f", key=f"lon_{i}")
         locations[name] = (lat, lon)
 
     st.markdown("---")
-    selected_locations = st.multiselect("Выберите локации для отображения погоды:", options=list(locations.keys()))
+    selected_locations = st.multiselect(
+        "Выберите локации для отображения погоды:",
+        options=list(locations.keys()),
+        default=list(locations.keys()) # Выбрать все по умолчанию
+    )
 
 if selected_locations:
     if st.button("Показать погоду для выбранных локаций"):
@@ -55,31 +94,50 @@ if selected_locations:
                 st.subheader(f"📍 Погода в {name}")
                 try:
                     data = get_weather_data(lat, lon)
-
                     forecast_list = data["list"]
 
-                    # Текущая погода — первая запись
+                    # --- НОВЫЙ БЛОК: Создание детальной таблицы прогноза ---
+                    st.subheader("🗓️ Детальный прогноз по часам")
+                    
+                    table_data = []
+                    for entry in forecast_list:
+                        dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
+                        
+                        table_data.append({
+                            "Дата": dt_object.strftime("%d.%m"),
+                            "Время": map_time_to_period(dt_object.hour),
+                            "Явления": entry["weather"][0]["description"].capitalize(),
+                            "Температура, °C": round(entry["main"]["temp"]),
+                            "Давление, мм рт. ст.": round(entry["main"]["pressure"] * 0.75006),
+                            "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])} {round(entry['wind']['speed'])}",
+                            "Влажность, %": entry["main"]["humidity"]
+                        })
+                    
+                    df_forecast = pd.DataFrame(table_data)
+                    st.dataframe(df_forecast, use_container_width=True, hide_index=True)
+                    # --- КОНЕЦ НОВОГО БЛОКА ---
+
+                    # Текущая погода (первая запись из прогноза)
+                    st.subheader("☀️ Текущая погода")
                     current = forecast_list[0]
-                    st.write(f"Температура: {current['main']['temp']} °C")
-                    st.write(f"Ветер: {current['wind']['speed']} м/с")
-                    st.write(f"Облачность: {current['clouds']['all']} %")
-                    pressure_mmHg = round(current['main']['pressure'] * 0.75006)
-                    st.write(f"Давление: {pressure_mmHg} мм рт. ст.")
-                    rain = current.get('rain', {}).get('3h', 0)
-                    snow = current.get('snow', {}).get('3h', 0)
-                    st.write(f"Дождь: {rain} мм за 3 ч")
-                    st.write(f"Снег: {snow} мм за 3 ч")
+                    col1, col2 = st.columns(2)
+                    col1.metric("Температура", f"{current['main']['temp']} °C")
+                    col1.metric("Ветер", f"{current['wind']['speed']} м/с")
+                    col2.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
+                    col2.metric("Облачность", f"{current['clouds']['all']} %")
 
-                    st.subheader("🔮 Прогноз на 3 дня")
-
-                    # Группировка по дате
+                    # Группировка по дате для графиков и сводки
                     grouped = defaultdict(list)
                     for entry in forecast_list:
                         date_str = entry["dt_txt"].split(" ")[0]
                         grouped[date_str].append(entry)
+                    
+                    # --- Блок со сводкой на 3 дня (можно оставить или убрать) ---
+                    st.subheader("📊 Сводка и графики на 3 дня")
+                    
+                    forecast_days = sorted(grouped.keys())[1:4] # Берем следующие 3 дня
 
-                    forecast_days = sorted(grouped.keys())[1:4]
-
+                    # Подготовка данных для графиков
                     temp_records = []
                     wind_records = []
                     cloud_records = []
@@ -94,17 +152,13 @@ if selected_locations:
 
                         temp_day = max(temps)
                         temp_night = min(temps)
-
+                        
+                        # Добавляем данные для графиков
                         temp_records.append({"Дата": date, "Температура": temp_day, "Время суток": "День"})
                         temp_records.append({"Дата": date, "Температура": temp_night, "Время суток": "Ночь"})
                         wind_records.append({"Дата": date, "Скорость ветра": sum(wind_speeds) / len(wind_speeds)})
                         cloud_records.append({"Дата": date, "Облачность": sum(clouds) / len(clouds)})
                         pop_records.append({"Дата": date, "Вероятность осадков": int(max(pops) * 100)})
-
-                        st.write(f"📅 {date}")
-                        st.write(f"Температура: день {temp_day} °C, ночь {temp_night} °C")
-                        st.write(f"Облачность: {int(sum(clouds) / len(clouds))} %")
-                        st.write(f"Вероятность осадков: {int(max(pops) * 100)} %")
 
                     # Графики
                     df_temp = pd.DataFrame(temp_records)
@@ -113,43 +167,44 @@ if selected_locations:
                     df_pop = pd.DataFrame(pop_records)
 
                     chart_temp = alt.Chart(df_temp).mark_line(point=True).encode(
-                        x='Дата',
-                        y='Температура',
+                        x=alt.X('Дата', title='Дата'),
+                        y=alt.Y('Температура', title='Температура, °C'),
                         color='Время суток',
                         tooltip=['Дата', 'Время суток', 'Температура']
-                    ).properties(width=600, height=300, title='Динамика температуры на 3 дня')
+                    ).properties(title='Динамика температуры на 3 дня')
 
                     chart_wind = alt.Chart(df_wind).mark_line(point=True, color='green').encode(
-                        x='Дата',
-                        y='Скорость ветра',
+                        x=alt.X('Дата', title='Дата'),
+                        y=alt.Y('Скорость ветра', title='Скорость ветра, м/с'),
                         tooltip=['Дата', 'Скорость ветра']
-                    ).properties(width=600, height=200, title='Скорость ветра (м/с)')
+                    )
 
                     chart_cloud = alt.Chart(df_cloud).mark_line(point=True, color='gray').encode(
-                        x='Дата',
-                        y='Облачность',
+                        x=alt.X('Дата', title='Дата'),
+                        y=alt.Y('Облачность', title='Облачность, %'),
                         tooltip=['Дата', 'Облачность']
-                    ).properties(width=600, height=200, title='Облачность (%)')
+                    )
 
                     chart_pop = alt.Chart(df_pop).mark_line(point=True, color='blue').encode(
-                        x='Дата',
-                        y='Вероятность осадков',
+                        x=alt.X('Дата', title='Дата'),
+                        y=alt.Y('Вероятность осадков', title='Вероятность осадков, %'),
                         tooltip=['Дата', 'Вероятность осадков']
-                    ).properties(width=600, height=200, title='Вероятность осадков (%)')
+                    )
 
                     combined_chart = alt.vconcat(
                         chart_temp,
                         chart_wind,
                         chart_cloud,
-                        chart_pop,
-                        spacing=20
+                        chart_pop
+                    ).resolve_scale(
+                        x='shared' # общая ось X для всех графиков
                     )
                     st.altair_chart(combined_chart, use_container_width=True)
 
                 except requests.exceptions.HTTPError as e:
                     if e.response.status_code == 401:
-                        st.error(f"Ошибка аутентификации для {name}: Неверный API-ключ OpenWeatherMap")
+                        st.error(f"Ошибка аутентификации для {name}: Неверный API-ключ OpenWeatherMap.")
                     else:
-                        st.error(f"Ошибка HTTP ({e.response.status_code}) для {name}: {e.response.reason}")
+                        st.error(f"Ошибка HTTP ({e.response.status_code}) для {name}: {e.response.text}")
                 except Exception as e:
-                    st.error(f"Ошибка при получении данных для {name}: {str(e)}")
+                    st.error(f"Произошла ошибка при получении данных для {name}: {str(e)}")
