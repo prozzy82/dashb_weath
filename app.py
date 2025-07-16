@@ -120,7 +120,7 @@ if selected_locations:
                             "Явления": entry["weather"][0]["description"].capitalize(),
                             "Темп., °C": round(entry["main"]["temp"]),
                             "Давление": round(entry['main']['pressure'] * 0.75006),
-                            "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])};  {round(entry['wind']['speed'])}",
+                            "Ветер, speed": f"{degrees_to_cardinal(entry['wind']['deg'])};    {round(entry['wind']['speed'])}м/с",
                             "Влажность, %": entry["main"]["humidity"]
                         })
                     
