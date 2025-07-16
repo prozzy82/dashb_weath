@@ -98,15 +98,27 @@ if selected_locations:
                     # Блок с текущей погодой
                     st.subheader("☀️ Текущая погода")                   
                     current = forecast_list[0]
-                    weather_description = current['weather'][0]['description'].capitalize()  # Добавьте эту строку
+                    weather_description = current['weather'][0]['description'].capitalize()
+                    weather_icon = current['weather'][0]['icon']
+                    icon_url = f"http://openweathermap.org/img/wn/{weather_icon}@2x.png"
 
-                    # Создаем ТРИ колонки вместо двух
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Температура", f"{current['main']['temp']} °C")
-                    col1.metric("Ветер", f"{degrees_to_cardinal(current['wind']['deg'])}; {current['wind']['speed']} м/с")  # Добавлено направление
-                    col2.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
-                    col2.metric("Облачность", f"{current['clouds']['all']} %")
-                    col3.metric("Явления", weather_description)  # Новая метрика с явлениями
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Температура", f"{current['main']['temp']} °C")
+                        st.metric("Ветер", f"{degrees_to_cardinal(current['wind']['deg'])}; {current['wind']['speed']} м/с")
+
+                    with col2:
+                        st.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
+                        st.metric("Облачность", f"{current['clouds']['all']} %")
+
+                    # Блок явлений - под метриками
+                    st.markdown(
+                        f"<div style='display: flex; align-items: center; margin-top: 10px;'>"
+                        f"<img src='{icon_url}' alt='Weather icon' style='width: 40px; margin-right: 8px;'>"
+                        f"<span style='font-size: 16px;'><b>{weather_description}</b></span>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
                     
                     # --- ИЗМЕНЕНИЕ: ТАБЛИЦА НА 2 ДНЯ (16 ЗАПИСЕЙ) ---
                     st.subheader("🗓️ Детальный прогноз на 2 дня")
