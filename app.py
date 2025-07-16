@@ -50,7 +50,7 @@ if selected_locations:
                 lat, lon = locations[name]
                 st.markdown(f"---")
                 st.subheader(f"📍 Погода в {name}")
-                 try:
+                try:  # <---- ИСПРАВЛЕННЫЙ ОТСТУП ЗДЕСЬ
                     data = get_weather_data(lat, lon)
 
                     if "current" in data:
@@ -144,8 +144,3 @@ if selected_locations:
                         st.error(f"Ошибка HTTP ({e.response.status_code}) для {name}: {e.response.reason}")
                 except Exception as e:
                     st.error(f"Ошибка при получении данных для {name}: {str(e)}")
-
-            except requests.exceptions.HTTPError as e:
-                st.error(f"Ошибка HTTP для {name}: {e}")
-            except Exception as e:
-                st.error(f"Ошибка при получении данных для {name}: {e}")
