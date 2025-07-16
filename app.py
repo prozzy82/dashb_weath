@@ -103,10 +103,8 @@ if selected_locations:
                     col1.metric("Ветер", f"{current['wind']['speed']} м/с")
                     col2.metric("Давление", f"{round(current['main']['pressure'] * 0.75006)} мм рт. ст.")
                     col2.metric("Облачность", f"{current['clouds']['all']} %")
+                    col3.metric("Явления", weather_description)  # Новая метрика с явлениями
                     
-                    st.markdown(f"**Погодные условия:** {weather_description}")
-
-
                     # --- ИЗМЕНЕНИЕ: ТАБЛИЦА НА 2 ДНЯ (16 ЗАПИСЕЙ) ---
                     st.subheader("🗓️ Детальный прогноз на 2 дня")
                     
