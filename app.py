@@ -96,7 +96,7 @@ if selected_locations:
                     data = get_weather_data(lat, lon)
                     forecast_list = data["list"]
 
-                    # --- ИЗМЕНЕНИЕ 1: БЛОК С ТЕКУЩЕЙ ПОГОДОЙ ТЕПЕРЬ ВВЕРХУ ---
+                    # Блок с текущей погодой
                     st.subheader("☀️ Текущая погода")
                     current = forecast_list[0]
                     col1, col2 = st.columns(2)
@@ -106,11 +106,12 @@ if selected_locations:
                     col2.metric("Облачность", f"{current['clouds']['all']} %")
 
 
-                    # --- Блок с детальной таблицей прогноза ---
-                    st.subheader("🗓️ Детальный прогноз по часам")
+                    # --- ИЗМЕНЕНИЕ: ТАБЛИЦА НА 3 ДНЯ (24 ЗАПИСИ) ---
+                    st.subheader("🗓️ Детальный прогноз на 3 дня")
                     
                     table_data = []
-                    for entry in forecast_list:
+                    # Ограничиваем цикл первыми 24 записями (8 записей/день * 3 дня)
+                    for entry in forecast_list[:24]:
                         dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
                         
                         table_data.append({
@@ -125,9 +126,8 @@ if selected_locations:
                     
                     df_forecast = pd.DataFrame(table_data)
                     
-                    # --- ИЗМЕНЕНИЕ 2: ДИНАМИЧЕСКИЙ РАСЧЕТ ВЫСОТЫ ТАБЛИЦЫ ---
-                    # Рассчитываем высоту: (кол-во строк + 1 для заголовка) * 35 пикселей на строку
-                    table_height = (len(df_forecast) + 1) * 35
+                    # Рассчитываем высоту для 24 строк
+                    table_height = (24 + 1) * 35
                     st.dataframe(
                         df_forecast, 
                         use_container_width=True, 
@@ -135,8 +135,8 @@ if selected_locations:
                         height=table_height
                     )
 
-                    # Группировка по дате для графиков
-                    st.subheader("📊 Графики прогноза на 5 дней")
+                    # --- ГРАФИКИ ---
+                    st.subheader("📊 Графики прогноза")
                     grouped = defaultdict(list)
                     for entry in forecast_list:
                         date_str = entry["dt_txt"].split(" ")[0]
@@ -147,14 +147,12 @@ if selected_locations:
                     # Подготовка данных для графиков
                     temp_records = []
                     wind_records = []
-                    cloud_records = []
                     pop_records = []
 
                     for date in forecast_days:
                         day_data = grouped[date]
                         temps = [x["main"]["temp"] for x in day_data]
                         wind_speeds = [x["wind"]["speed"] for x in day_data]
-                        clouds = [x["clouds"]["all"] for x in day_data]
                         pops = [x.get("pop", 0) for x in day_data]
 
                         if not temps: continue
@@ -165,13 +163,11 @@ if selected_locations:
                         temp_records.append({"Дата": date, "Температура": temp_day, "Время суток": "День"})
                         temp_records.append({"Дата": date, "Температура": temp_night, "Время суток": "Ночь"})
                         wind_records.append({"Дата": date, "Скорость ветра": sum(wind_speeds) / len(wind_speeds)})
-                        cloud_records.append({"Дата": date, "Облачность": sum(clouds) / len(clouds)})
                         pop_records.append({"Дата": date, "Вероятность осадков": int(max(pops) * 100)})
 
                     # Создание DataFrame'ов для графиков
                     df_temp = pd.DataFrame(temp_records)
                     df_wind = pd.DataFrame(wind_records)
-                    df_cloud = pd.DataFrame(cloud_records)
                     df_pop = pd.DataFrame(pop_records)
 
                     # Построение графиков
@@ -199,7 +195,7 @@ if selected_locations:
                         chart_wind,
                         chart_pop
                     ).resolve_scale(
-                        x='shared' # общая ось X для всех графиков
+                        x='shared'
                     )
                     st.altair_chart(combined_chart, use_container_width=True)
 
