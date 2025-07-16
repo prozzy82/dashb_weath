@@ -126,19 +126,34 @@ if selected_locations:
                     st.subheader("🗓️ Детальный прогноз на 2 дня")
                     
                     table_data = []
-                    # Ограничиваем цикл первыми 16 записями (8 записей/день * 2 дня)
                     for entry in forecast_list[:16]:
-                        dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
-                        
-                        table_data.append({
-                            "Дата": dt_object.strftime("%d.%m"),
-                            "Время": f"{dt_object.strftime('%H:%M')}, {map_time_to_period(dt_object.hour)}",
-                            "Явления": entry["weather"][0]["description"].capitalize(),
-                            "Темп., °C": round(entry["main"]["temp"]),
-                            "Давление": round(entry['main']['pressure'] * 0.75006),
-                            "Ветер, speed": f"{degrees_to_cardinal(entry['wind']['deg'])};    {round(entry['wind']['speed'])}м/с",
-                            "Влажность, %": entry["main"]["humidity"]
-                        })
+                    dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
+    
+                    # Получаем данные об осадках
+                    rain = entry.get('rain', {}).get('3h', 0)  # Осадки за последние 3 часа в мм
+                    snow = entry.get('snow', {}).get('3h', 0)
+                    precipitation = rain + snow
+    
+                    # Определяем интенсивность осадков
+                    if precipitation == 0:
+                        precip_intensity = "Без осадков"
+                    elif precipitation < 2.5:
+                        precip_intensity = "Слабые"
+                    elif precipitation < 7.5:
+                        precip_intensity = "Умеренные"
+                    else:
+                        precip_intensity = "Сильные"
+    
+                    table_data.append({
+                        "Дата": dt_object.strftime("%d.%m"),
+                        "Время": f"{dt_object.strftime('%H:%M')}, {map_time_to_period(dt_object.hour)}",
+                        "Явления": entry["weather"][0]["description"].capitalize(),
+                        "Темп., °C": round(entry["main"]["temp"]),
+                        "Давление": round(entry['main']['pressure'] * 0.75006),
+                        "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])}; {round(entry['wind']['speed'])}",
+                        "Влажность, %": entry["main"]["humidity"],
+                        "Осадки": f"{precip_intensity} ({precipitation:.1f} мм)"  # Новая колонка
+                    })
                     
                     df_forecast = pd.DataFrame(table_data)
                     
