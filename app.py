@@ -7,11 +7,17 @@ import altair as alt
 API_KEY = st.secrets["OPENWEATHER_API_KEY"]
 
 def get_weather_data(lat, lon):
-    url = (
-        f"https://api.openweathermap.org/data/2.5/onecall?"
-        f"lat={lat}&lon={lon}&units=metric&lang=ru&exclude=minutely,hourly,alerts&appid={API_KEY}"
-    )
-    response = requests.get(url)
+    url = "https://api.openweathermap.org/data/2.5/onecall"
+    params = {
+        "lat": lat,
+        "lon": lon,
+        "units": "metric",
+        "lang": "ru",
+        "exclude": "minutely,hourly,alerts",
+        "appid": API_KEY
+    }
+    response = requests.get(url, params=params)
+    response.raise_for_status()
     return response.json()
 
 st.title("🌦️ Погода")
@@ -30,11 +36,13 @@ st.markdown("---")
 selected_locations = st.multiselect("Выберите локации для отображения погоды:", options=list(locations.keys()))
 
 if st.button("Показать погоду для выбранных локаций") and selected_locations:
-    for name in selected_locations:
-        lat, lon = locations[name]
-        st.markdown(f"---")
-        st.subheader(f"📍 Погода в {name}")
-        data = get_weather_data(lat, lon)
+    with st.spinner("Получаем данные..."):
+        for name in selected_locations:
+            lat, lon = locations[name]
+            st.markdown(f"---")
+            st.subheader(f"📍 Погода в {name}")
+            try:
+                data = get_weather_data(lat, lon)
 
         if "current" in data:
             current = data["current"]
@@ -43,10 +51,10 @@ if st.button("Показать погоду для выбранных локац
             st.write(f"Облачность: {current['clouds']} %")
             pressure_mmHg = round(current['pressure'] * 0.75006)
             st.write(f"Давление: {pressure_mmHg} мм рт. ст.")
-            if "rain" in current:
-                st.write(f"Дождь: {current['rain'].get('1h', 0)} мм/ч")
-            if "snow" in current:
-                st.write(f"Снег: {current['snow'].get('1h', 0)} мм/ч")
+            rain = current.get('rain', {}).get('1h', 0)
+            snow = current.get('snow', {}).get('1h', 0)
+            st.write(f"Дождь: {rain} мм/ч")
+            st.write(f"Снег: {snow} мм/ч")
 
             st.subheader("🔮 Прогноз на 3 дня")
 
@@ -114,5 +122,9 @@ if st.button("Показать погоду для выбранных локац
             st.altair_chart(chart_cloud, use_container_width=True)
             st.altair_chart(chart_pop, use_container_width=True)
 
+            except requests.exceptions.HTTPError as e:
+                st.error(f"Ошибка HTTP для {name}: {e}")
+            except Exception as e:
+                st.error(f"Ошибка при получении данных для {name}: {e}")
         else:
             st.error(f"Ошибка при получении данных для {name}. Проверьте координаты и API-ключ.")
