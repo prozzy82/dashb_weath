@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 import altair as alt
 
-API_KEY = "6aea0ff5a18776815aca1a8c0df7969d"
+API_KEY = ""
 try:
     API_KEY = st.secrets["OPENWEATHER_API_KEY"]
     if not API_KEY:
