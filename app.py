@@ -91,7 +91,12 @@ with st.sidebar:
         lat = st.number_input(f"Широта {i}:", value=default_lat, format="%.6f", key=f"lat_{i}")
         lon = st.number_input(f"Долгота {i}:", value=default_lon, format="%.6f", key=f"lon_{i}")
         locations[name] = (lat, lon)
-
+    
+    st.sidebar.markdown("""
+    <div style="margin-top: 500px; text-align: center;">
+        ©D.Prozorovskiy
+    </div>
+    """, unsafe_allow_html=True)
 
 if selected_locations:
     if st.button("Показать погоду для выбранных локаций"):
