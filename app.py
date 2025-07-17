@@ -163,65 +163,48 @@ if selected_locations:
                     
                     forecast_days = sorted(grouped.keys())
 
-                    temp_records, wind_records, pop_records, pressure_records = [], [], [], []
+                    temp_records, wind_records, pop_records = [], [], []
+
                     for date in forecast_days:
                         day_data = grouped[date]
                         if not day_data: continue
                         temps = [x["main"]["temp"] for x in day_data]
                         wind_speeds = [x["wind"]["speed"] for x in day_data]
                         pops = [x.get("pop", 0) for x in day_data]
-                        pressures = [x["main"]["pressure"] * 0.75006 for x in day_data]  # конвертация в мм рт.ст.
 
                         temp_records.append({"Дата": date, "Температура": max(temps), "Время суток": "День"})
                         temp_records.append({"Дата": date, "Температура": min(temps), "Время суток": "Ночь"})
                         wind_records.append({"Дата": date, "Скорость ветра": sum(wind_speeds) / len(wind_speeds)})
                         pop_records.append({"Дата": date, "Вероятность осадков": int(max(pops) * 100)})
-                        pressure_records.append({"Дата": date, "Давление": sum(pressures) / len(pressures)})
 
                     df_temp = pd.DataFrame(temp_records)
                     df_wind = pd.DataFrame(wind_records)
                     df_pop = pd.DataFrame(pop_records)
-                    df_pressure = pd.DataFrame(pressure_records)
-
-                    # Преобразуем давление в числовой формат
-                    df_pressure['Давление'] = pd.to_numeric(df_pressure['Давление'])
 
                     chart_temp = alt.Chart(df_temp).mark_line(point=True).encode(
                         x=alt.X('Дата', title='Дата'),
                         y=alt.Y('Температура', title='Температура, °C'),
                         color='Время суток',
                         tooltip=['Дата', 'Время суток', 'Температура']
-                    ).properties(title='Динамика температуры', height=200)
+                    ).properties(title='Динамика температуры')
 
                     chart_wind = alt.Chart(df_wind).mark_line(point=True, color='green').encode(
                         x=alt.X('Дата', title='Дата'),
                         y=alt.Y('Скорость ветра', title='Скорость ветра, м/с'),
                         tooltip=['Дата', 'Скорость ветра']
-                    ).properties(title='Скорость ветра', height=200)
+                    )
 
                     chart_pop = alt.Chart(df_pop).mark_bar(size=15, opacity=0.7, color='blue').encode(
                         x=alt.X('Дата', title='Дата'),
                         y=alt.Y('Вероятность осадков', title='Вероятность осадков, %'),
                         tooltip=['Дата', 'Вероятность осадков']
-                    ).properties(title='Вероятность осадков', height=200)
+                    ).properties(title='Вероятность осадков')
 
-                    chart_pressure = alt.Chart(df_pressure).mark_line(point=True, color='purple').encode(
-                        x=alt.X('Дата', title='Дата'),
-                        y=alt.Y('Давление', title='Давление, мм рт.ст.', type='quantitative'),
-                        tooltip=['Дата', 'Давление']
-                    ).properties(title='Атмосферное давление', height=200)
-
-                    top_charts = alt.hconcat(chart_temp, chart_wind).resolve_scale(
-                        x='shared',
-                        y='independent'
-                    )
-
-                    bottom_charts = alt.hconcat(chart_pop, chart_pressure).resolve_scale(
-                        x='shared',
-                        y='independent'
-                    )
-
-                    combined_chart = alt.vconcat(top_charts, bottom_charts).resolve_scale(
+                    combined_chart = alt.vconcat(
+                        chart_temp,
+                        chart_wind,
+                        chart_pop
+                    ).resolve_scale(
                         x='shared'
                     )
                     st.altair_chart(combined_chart, use_container_width=True)
