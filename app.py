@@ -180,7 +180,7 @@ if selected_locations:
                     for entry in forecast_list:
                         date_str = entry['local_time'].strftime("%Y-%m-%d")
                         grouped[date_str].append(entry)
-                    
+
                     forecast_days = sorted(grouped.keys())
 
                     temp_records, wind_records, pop_records = [], [], []
@@ -201,32 +201,46 @@ if selected_locations:
                     df_wind = pd.DataFrame(wind_records)
                     df_pop = pd.DataFrame(pop_records)
 
+                    # Устанавливаем высоту для каждого графика, чтобы сделать их компактнее
+                    chart_height = 150
+
                     chart_temp = alt.Chart(df_temp).mark_line(point=True).encode(
-                        x=alt.X('Дата', title='Дата'),
+                        x=alt.X('Дата', title=None), # Убираем заголовок оси X, т.к. он будет общим
                         y=alt.Y('Температура', title='Температура, °C'),
                         color='Время суток',
                         tooltip=['Дата', 'Время суток', 'Температура']
-                    ).properties(title='Динамика температуры')
+                    ).properties(
+                        title='Динамика температуры',
+                        height=chart_height  # Устанавливаем высоту
+                    )
 
                     chart_wind = alt.Chart(df_wind).mark_line(point=True, color='green').encode(
-                        x=alt.X('Дата', title='Дата'),
-                        y=alt.Y('Скорость ветра', title='Скорость ветра, м/с'),
+                        x=alt.X('Дата', title=None), # Убираем заголовок оси X
+                        y=alt.Y('Скорость ветра', title='Ветер, м/с'),
                         tooltip=['Дата', 'Скорость ветра']
+                    ).properties(
+                        title='Средняя скорость ветра',
+                        height=chart_height # Устанавливаем высоту
                     )
 
                     chart_pop = alt.Chart(df_pop).mark_bar(size=15, opacity=0.7, color='blue').encode(
-                        x=alt.X('Дата', title='Дата'),
-                        y=alt.Y('Вероятность осадков', title='Вероятность осадков, %'),
+                        x=alt.X('Дата', title='Дата'), # Оставляем заголовок на нижнем графике
+                        y=alt.Y('Вероятность осадков', title='Осадки, %'),
                         tooltip=['Дата', 'Вероятность осадков']
-                    ).properties(title='Вероятность осадков')
+                    ).properties(
+                        title='Вероятность осадков',
+                        height=chart_height # Устанавливаем высоту
+                    )
 
+                    # Соединяем графики
                     combined_chart = alt.vconcat(
                         chart_temp,
                         chart_wind,
                         chart_pop
                     ).resolve_scale(
-                        x='shared'
+                        x='shared' # Делаем ось X общей для всех
                     )
+
                     st.altair_chart(combined_chart, use_container_width=True)
 
                     # --- БЛОК С КНОПКОЙ-ССЫЛКОЙ НА ЯНДЕКС (НА НОВОМ МЕСТЕ) ---
