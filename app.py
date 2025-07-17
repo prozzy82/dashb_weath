@@ -96,7 +96,7 @@ if selected_locations:
                     forecast_list = data["list"]
                     
                     # Блок с текущей погодой
-                    st.subheader("☀️ Текущая погода (данные:OpenWeatherMap)")                   
+                    st.subheader("☀️ Текущая погода <small>(данные: OpenWeatherMap)</small>")                   
                     current = forecast_list[0]
                     weather_description = current['weather'][0]['description'].capitalize()
                     weather_icon = current['weather'][0]['icon']
