@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import altair as alt
 from collections import defaultdict
@@ -77,6 +77,8 @@ with st.sidebar:
         lon = st.number_input(f"Долгота {i}:", value=default_lon, format="%.6f", key=f"lon_{i}")
         locations[name] = (lat, lon)
 
+    utc_offset = st.number_input("Смещение от UTC (часы)", min_value=-12, max_value=14, value=6, step=1)
+    
     st.markdown("---")
     selected_locations = st.multiselect(
         "Выберите локации для отображения погоды:",
@@ -94,6 +96,12 @@ if selected_locations:
                 try:
                     data = get_weather_data(lat, lon)
                     forecast_list = data["list"]
+                    
+                    # Преобразуем время UTC в локальное время, добавляя смещение
+                    for entry in forecast_list:
+                        dt_utc = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
+                        local_time = dt_utc + timedelta(hours=utc_offset)
+                        entry['local_time'] = local_time
                     
                     # Блок с текущей погодой
                     st.subheader("☀️ Текущая погода (данные: OpenWeatherMap)")                   
@@ -127,15 +135,15 @@ if selected_locations:
                     
                     table_data = []
                     for entry in forecast_list[:10]:
-                        dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
-    
+                        local_time = entry['local_time']
+                        
                         rain = entry.get('rain', {}).get('3h', 0)
                         snow = entry.get('snow', {}).get('3h', 0)
                         precipitation = rain + snow
     
                         table_data.append({
-                            "Дата": dt_object.strftime("%d.%m"),
-                            "Время": f"{dt_object.strftime('%H:%M')}, {map_time_to_period(dt_object.hour)}",
+                            "Дата": local_time.strftime("%d.%m"),
+                            "Время": f"{local_time.strftime('%H:%M')}, {map_time_to_period(local_time.hour)}",
                             "Явления": entry["weather"][0]["description"].capitalize(),
                             "Темп., °C": round(entry["main"]["temp"]),
                             "Давл.": round(entry['main']['pressure'] * 0.75006),
@@ -158,7 +166,7 @@ if selected_locations:
                     st.subheader("📊 Графики прогноза")
                     grouped = defaultdict(list)
                     for entry in forecast_list:
-                        date_str = entry["dt_txt"].split(" ")[0]
+                        date_str = entry['local_time'].strftime("%Y-%m-%d")
                         grouped[date_str].append(entry)
                     
                     forecast_days = sorted(grouped.keys())
