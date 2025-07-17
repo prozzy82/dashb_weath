@@ -14,6 +14,7 @@ try:
         st.error("Ключ OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте его в настройки вашего приложения.")
         st.stop()
 except (KeyError, FileNotFoundError):
+    # Локальная разработка может не иметь st.secrets, добавьте запасной вариант, если нужно
     st.error("Ключ OPENWEATHER_API_KEY не найден в секретах Streamlit. Пожалуйста, добавьте его в настройки вашего приложения.")
     st.stop()
 
@@ -58,7 +59,7 @@ st.title("🌦️ Погода")
 # Сайдбар для ввода параметров
 with st.sidebar:
     st.header("Параметры локаций")
-    locations = {}
+    
     # Пример локаций по умолчанию
     default_locs = {
         "Омск, Березов.-Красный П.": (55.012597, 73.331728),
@@ -66,25 +67,31 @@ with st.sidebar:
         "Омск, Дача": (55.064546, 73.397613)
     }
     
-    for i in range(1, 4):
+    # ВАЖНО: Мы должны сначала определить возможные опции для multiselect.
+    # Мы будем использовать ключи из default_locs, но виджеты для их редактирования будут ниже.
+    location_names_options = list(default_locs.keys())
+    
+    selected_locations = st.multiselect(
+        "Выберите локации для отображения погоды:",
+        options=location_names_options,
+        default=location_names_options # Выбрать все по умолчанию
+    )
+    
+    utc_offset = st.number_input("Смещение от UTC (часы)", min_value=-12, max_value=14, value=6, step=1)
+    
+    st.markdown("---")
+
+    # Теперь отображаем поля для ввода данных для каждой локации
+    locations = {}
+    for i, default_name in enumerate(default_locs.keys(), 1):
         st.subheader(f"Локация {i}")
-        # Используем ключи из словаря для значений по умолчанию
-        default_name = list(default_locs.keys())[i-1]
         default_lat, default_lon = default_locs[default_name]
         
         name = st.text_input(f"Название локации {i}:", value=default_name, key=f"name_{i}")
         lat = st.number_input(f"Широта {i}:", value=default_lat, format="%.6f", key=f"lat_{i}")
         lon = st.number_input(f"Долгота {i}:", value=default_lon, format="%.6f", key=f"lon_{i}")
         locations[name] = (lat, lon)
-    
-    st.markdown("---")
-    selected_locations = st.multiselect(
-        "Выберите локации для отображения погоды:",
-        options=list(locations.keys()),
-        default=list(locations.keys()) # Выбрать все по умолчанию
-    )
-    
-    utc_offset = st.number_input("Смещение от UTC (часы)", min_value=-12, max_value=14, value=6, step=1)
+
 
 if selected_locations:
     if st.button("Показать погоду для выбранных локаций"):
