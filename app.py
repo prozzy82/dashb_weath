@@ -57,6 +57,15 @@ st.title("🌦️ Погода")
 
 # Сайдбар для ввода параметров
 with st.sidebar:
+    selected_locations = st.multiselect(
+        "Выберите локации для отображения погоды:",
+        options=list(locations.keys()),
+        default=list(locations.keys()) # Выбрать все по умолчанию
+    )
+    
+    utc_offset = st.number_input("Смещение от UTC (часы)", min_value=-12, max_value=14, value=6, step=1)
+    
+    st.markdown("---")
     st.header("Параметры локаций")
     locations = {}
     # Пример локаций по умолчанию
@@ -76,15 +85,6 @@ with st.sidebar:
         lat = st.number_input(f"Широта {i}:", value=default_lat, format="%.6f", key=f"lat_{i}")
         lon = st.number_input(f"Долгота {i}:", value=default_lon, format="%.6f", key=f"lon_{i}")
         locations[name] = (lat, lon)
-
-    utc_offset = st.number_input("Смещение от UTC (часы)", min_value=-12, max_value=14, value=6, step=1)
-    
-    st.markdown("---")
-    selected_locations = st.multiselect(
-        "Выберите локации для отображения погоды:",
-        options=list(locations.keys()),
-        default=list(locations.keys()) # Выбрать все по умолчанию
-    )
 
 if selected_locations:
     if st.button("Показать погоду для выбранных локаций"):
