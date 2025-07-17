@@ -91,6 +91,12 @@ if selected_locations:
                 lat, lon = locations[name]
                 st.markdown(f"---")
                 st.subheader(f"📍 Погода в {name}")
+
+                # --- НОВЫЙ БЛОК: КНОПКА-ССЫЛКА НА ЯНДЕКС ---
+                yandex_url = f"https://yandex.ru/pogoda/ru?lat={lat}&lon={lon}"
+                st.link_button("Подробный прогноз на Яндекс.Погоде ↗", yandex_url)
+                # --- КОНЕЦ НОВОГО БЛОКА ---
+
                 try:
                     data = get_weather_data(lat, lon)
                     forecast_list = data["list"]
@@ -122,28 +128,16 @@ if selected_locations:
                     st.divider()  # Добавляет тонкую горизонтальную линию
                     
                     
-                    # --- ИЗМЕНЕНИЕ: ТАБЛИЦА НА 2 ДНЯ (16 ЗАПИСЕЙ) ---
+                    # Таблица на 2 дня (16 записей)
                     st.subheader("🗓️ Детальный прогноз на 2 дня")
                     
                     table_data = []
-                    # Обратите внимание на отступы этого блока!
                     for entry in forecast_list[:16]:
                         dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
     
-                        # Получаем данные об осадках
-                        rain = entry.get('rain', {}).get('3h', 0)  # Осадки за последние 3 часа в мм
+                        rain = entry.get('rain', {}).get('3h', 0)
                         snow = entry.get('snow', {}).get('3h', 0)
                         precipitation = rain + snow
-    
-                        # Определяем интенсивность осадков
-                        if precipitation == 0:
-                            precip_intensity = "Без осадков"
-                        elif precipitation < 2.5:
-                            precip_intensity = "Слабые"
-                        elif precipitation < 7.5:
-                            precip_intensity = "Умеренные"
-                        else:
-                            precip_intensity = "Сильные"
     
                         table_data.append({
                             "Дата": dt_object.strftime("%d.%m"),
@@ -153,13 +147,12 @@ if selected_locations:
                             "Давл.": round(entry['main']['pressure'] * 0.75006),
                             "Ветер, м/с": f"{degrees_to_cardinal(entry['wind']['deg'])};    {round(entry['wind']['speed'])}м/c",
                             "Влажн., %": entry["main"]["humidity"],
-                            "Осадки": f"({precipitation:.1f} мм)"  # Новая колонка
+                            "Осадки": f"{precipitation:.1f} мм"
                         })
                     
                     df_forecast = pd.DataFrame(table_data)
                     
-                    # Рассчитываем высоту для 16 строк
-                    table_height = (16 + 1) * 35
+                    table_height = (16 + 1) * 35 + 3 # Добавляем пиксели для запаса
                     st.dataframe(
                         df_forecast, 
                         use_container_width=True, 
@@ -176,33 +169,24 @@ if selected_locations:
                     
                     forecast_days = sorted(grouped.keys())
 
-                    # Подготовка данных для графиков
-                    temp_records = []
-                    wind_records = []
-                    pop_records = []
+                    temp_records, wind_records, pop_records = [], [], []
 
                     for date in forecast_days:
                         day_data = grouped[date]
+                        if not day_data: continue
                         temps = [x["main"]["temp"] for x in day_data]
                         wind_speeds = [x["wind"]["speed"] for x in day_data]
                         pops = [x.get("pop", 0) for x in day_data]
 
-                        if not temps: continue
-
-                        temp_day = max(temps)
-                        temp_night = min(temps)
-                        
-                        temp_records.append({"Дата": date, "Температура": temp_day, "Время суток": "День"})
-                        temp_records.append({"Дата": date, "Температура": temp_night, "Время суток": "Ночь"})
+                        temp_records.append({"Дата": date, "Температура": max(temps), "Время суток": "День"})
+                        temp_records.append({"Дата": date, "Температура": min(temps), "Время суток": "Ночь"})
                         wind_records.append({"Дата": date, "Скорость ветра": sum(wind_speeds) / len(wind_speeds)})
                         pop_records.append({"Дата": date, "Вероятность осадков": int(max(pops) * 100)})
 
-                    # Создание DataFrame'ов для графиков
                     df_temp = pd.DataFrame(temp_records)
                     df_wind = pd.DataFrame(wind_records)
                     df_pop = pd.DataFrame(pop_records)
 
-                    # Построение графиков
                     chart_temp = alt.Chart(df_temp).mark_line(point=True).encode(
                         x=alt.X('Дата', title='Дата'),
                         y=alt.Y('Температура', title='Температура, °C'),
