@@ -53,7 +53,7 @@ def degrees_to_cardinal(d):
 
 # --- Интерфейс приложения ---
 
-st.title("🌦️ Погода (openweathermap)")
+st.title("🌦️ Погода")
 
 # Сайдбар для ввода параметров
 with st.sidebar:
@@ -94,15 +94,9 @@ if selected_locations:
                 try:
                     data = get_weather_data(lat, lon)
                     forecast_list = data["list"]
-
-                    st.markdown(
-                        f"<div style='display: flex; align-items: center; margin-top: 10px;'>"
-                        f"<span style='font-size: 10px; font-weight: bold; ("openweather")</span>"
-                        f"</div>",
-                        unsafe_allow_html=True
-                    )
+                    
                     # Блок с текущей погодой
-                    st.subheader("☀️ Текущая погода")                   
+                    st.subheader("☀️ Текущая погода (данные:OpenWeatherMap)")                   
                     current = forecast_list[0]
                     weather_description = current['weather'][0]['description'].capitalize()
                     weather_icon = current['weather'][0]['icon']
