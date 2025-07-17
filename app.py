@@ -93,7 +93,7 @@ with st.sidebar:
         locations[name] = (lat, lon)
     
     st.sidebar.markdown("""
-    <div style="margin-top: 500px; text-align: center;">
+    <div style="margin-top: 50px; text-align: center;">
         ©D.Prozorovskiy
     </div>
     """, unsafe_allow_html=True)
