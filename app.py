@@ -126,7 +126,7 @@ if selected_locations:
                     st.subheader("🗓️ Детальный прогноз на 2 дня")
                     
                     table_data = []
-                    for entry in forecast_list[:16]:
+                    for entry in forecast_list[:10]:
                         dt_object = datetime.strptime(entry["dt_txt"], "%Y-%m-%d %H:%M:%S")
     
                         rain = entry.get('rain', {}).get('3h', 0)
