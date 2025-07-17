@@ -209,10 +209,10 @@ if selected_locations:
                     )
                     st.altair_chart(combined_chart, use_container_width=True)
 
-                    # --- НОВЫЙ БЛОК: КНОПКА-ССЫЛКА НА ЯНДЕКС ---
+                    # --- БЛОК С КНОПКОЙ-ССЫЛКОЙ НА ЯНДЕКС (НА НОВОМ МЕСТЕ) ---
                     yandex_url = f"https://yandex.ru/pogoda/ru?lat={lat}&lon={lon}"
-                    st.link_button("Подробный прогноз на Яндекс.Погоде ↗", yandex_url)
-                    # --- КОНЕЦ НОВОГО БЛОКА ---
+                    st.link_button(f"Подробный прогноз для '{name}' на Яндекс.Погоде ↗", yandex_url)
+                    # --- КОНЕЦ БЛОКА ---
 
                 except requests.exceptions.HTTPError as e:
                     if e.response.status_code == 401:
