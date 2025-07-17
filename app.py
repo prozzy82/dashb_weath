@@ -183,6 +183,9 @@ if selected_locations:
                     df_pop = pd.DataFrame(pop_records)
                     df_pressure = pd.DataFrame(pressure_records)
 
+                    # Преобразуем давление в числовой формат
+                    df_pressure['Давление'] = pd.to_numeric(df_pressure['Давление'])
+
                     chart_temp = alt.Chart(df_temp).mark_line(point=True).encode(
                         x=alt.X('Дата', title='Дата'),
                         y=alt.Y('Температура', title='Температура, °C'),
@@ -203,8 +206,8 @@ if selected_locations:
                     ).properties(title='Вероятность осадков', height=200)
 
                     chart_pressure = alt.Chart(df_pressure).mark_line(point=True, color='purple').encode(
-                        x=alt.X('Дата'),
-                        y=alt.Y('Давление', title='Давление, мм рт.ст.'),
+                        x=alt.X('Дата', title='Дата'),
+                        y=alt.Y('Давление', title='Давление, мм рт.ст.', type='quantitative'),
                         tooltip=['Дата', 'Давление']
                     ).properties(title='Атмосферное давление', height=200)
 
