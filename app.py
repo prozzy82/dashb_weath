@@ -60,7 +60,7 @@ with st.sidebar:
     
     # Пример локаций по умолчанию (можно добавить больше)
     default_locs = {
-        "Омск": (55.012597, 73.331728),
+        "Омск": (55.234229, 73.006526),
         "Москва": (55.755864, 37.617698) 
     }
     
@@ -219,3 +219,4 @@ if selected_locations:
                         st.error(f"Ошибка HTTP ({e.response.status_code}) для {name}: {e.response.text}")
                 except Exception as e:
                     st.error(f"Произошла ошибка при получении данных для {name}: {str(e)}")
+
